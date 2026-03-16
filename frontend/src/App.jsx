@@ -277,6 +277,7 @@ export default function App() {
   const [cropping, setCropping] = useState(false)
   const [equation, setEquation] = useState('')
   const [solution, setSolution] = useState('')
+  const [verification, setVerification] = useState(null)  // { status, sympy_solution, message }
   const [status, setStatus] = useState('idle')
   const [error, setError] = useState('')
   const [isDragging, setIsDragging] = useState(false)
@@ -310,12 +311,29 @@ export default function App() {
     loadFile(e.dataTransfer.files[0])
   }
 
+  // ── Verificación SymPy (se lanza automáticamente al terminar Claude) ────────
+  const verifyWithSympy = async (eq) => {
+    setVerification({ status: 'loading' })
+    try {
+      const res = await fetch(`${API}/api/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ equation: eq }),
+      })
+      const data = await res.json()
+      setVerification(data)
+    } catch {
+      setVerification({ status: 'error', message: 'No se pudo conectar con el verificador.' })
+    }
+  }
+
   const reset = () => {
     setRawImage(null)
     setImage(null)
     setCropping(false)
     setEquation('')
     setSolution('')
+    setVerification(null)
     setStatus('idle')
     setError('')
   }
@@ -371,12 +389,12 @@ export default function App() {
           try {
             const ev = JSON.parse(raw)
             if (ev.type === 'text') setSolution(p => p + ev.content)
-            else if (ev.type === 'done') setStatus('done')
+            else if (ev.type === 'done') { setStatus('done'); verifyWithSympy(equation) }
             else if (ev.type === 'error') throw new Error(ev.message)
           } catch (_) {}
         }
       }
-      setStatus(s => s !== 'done' ? 'done' : s)
+      setStatus(s => { if (s !== 'done') { verifyWithSympy(equation); return 'done' } return s })
     } catch (err) {
       setError(err.message)
       setStatus('error')
@@ -507,6 +525,42 @@ export default function App() {
               {solution}
               {isSolving && <span style={{ animation: 'blink 1s step-end infinite' }}>▊</span>}
             </div>
+          </div>
+        )}
+
+        {/* ── CARD 4: Verificación SymPy ────────────────────────────── */}
+        {verification && (
+          <div style={{ ...S.card, borderColor: verification.status === 'ok' ? 'rgba(52,211,153,0.3)' : verification.status === 'loading' ? '#2a2d45' : 'rgba(251,191,36,0.3)' }}>
+            <div style={S.cardTitle}>
+              <span>🔬</span> 4. Verificación simbólica (SymPy)
+              {verification.status === 'loading' && <span style={S.badge('purple')}>Verificando...</span>}
+              {verification.status === 'ok'      && <span style={S.badge('success')}>✓ Verificado</span>}
+              {verification.status === 'error'   && <span style={{ ...S.badge('purple'), color: '#fbbf24', borderColor: 'rgba(251,191,36,0.3)', background: 'rgba(251,191,36,0.1)' }}>⚠ No verificable</span>}
+            </div>
+
+            {verification.status === 'loading' && (
+              <div style={{ ...S.row, color: '#64748b', fontSize: '0.85rem' }}>
+                <span style={S.spinner} /> Calculando solución exacta con SymPy...
+              </div>
+            )}
+
+            {verification.status === 'ok' && (
+              <div>
+                <p style={{ color: '#64748b', fontSize: '0.78rem', marginBottom: '10px' }}>
+                  Solución exacta calculada independientemente por SymPy (motor de matemática simbólica):
+                </p>
+                <div style={{ ...S.equationBox, borderColor: 'rgba(52,211,153,0.25)', fontSize: '0.92rem' }}>
+                  {verification.sympy_solution}
+                </div>
+              </div>
+            )}
+
+            {verification.status === 'error' && (
+              <p style={{ color: '#94a3b8', fontSize: '0.85rem' }}>
+                SymPy no pudo resolver esta ecuación automáticamente — confía en la solución de Claude.
+                {verification.message && <span style={{ color: '#64748b' }}> ({verification.message})</span>}
+              </p>
+            )}
           </div>
         )}
 

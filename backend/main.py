@@ -5,6 +5,7 @@ from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 import anthropic
+import sympy
 
 app = FastAPI()
 
@@ -175,6 +176,66 @@ async def solve_equation(body: dict):
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"}
     )
+
+
+SYMPY_PROMPT = """Convierte esta ecuación diferencial a código Python con SymPy y resuélvela.
+
+Ecuación: {equation}
+
+Responde ÚNICAMENTE con código Python ejecutable, sin explicaciones ni bloques markdown.
+El código debe:
+1. Usar: from sympy import *
+2. Definir: x = symbols('x'); y = Function('y')
+3. Definir la EDO como objeto Eq (ej: ode = Eq(y(x).diff(x), ...))
+4. Si hay condición inicial, definirla como: ics = {{y(x0): y0}}
+5. Resolver con dsolve y guardar en: result = dsolve(ode, y(x)) o dsolve(ode, y(x), ics=ics)
+6. Imprimir: print(str(result))
+
+Solo código, sin comentarios."""
+
+
+@app.post("/api/verify")
+async def verify_equation(body: dict):
+    equation = body.get("equation", "").strip()
+    if not equation:
+        raise HTTPException(status_code=400, detail="No se proporcionó ecuación.")
+
+    # Paso 1: Claude genera el código SymPy
+    try:
+        client = get_client()
+        code_response = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=512,
+            messages=[{"role": "user", "content": SYMPY_PROMPT.format(equation=equation)}]
+        )
+        code = code_response.content[0].text.strip()
+        # Limpiar bloques de código si Claude los incluye
+        if "```python" in code:
+            code = code.split("```python")[1].split("```")[0].strip()
+        elif "```" in code:
+            code = code.split("```")[1].split("```")[0].strip()
+    except Exception as e:
+        return {"status": "error", "message": f"Error generando código: {str(e)}"}
+
+    # Paso 2: Ejecutar SymPy en namespace restringido
+    try:
+        output = []
+        safe_ns = {name: getattr(sympy, name) for name in dir(sympy) if not name.startswith("_")}
+        safe_ns["__builtins__"] = {}
+        safe_ns["print"] = lambda *args: output.append(" ".join(str(a) for a in args))
+
+        exec(code, safe_ns)  # noqa: S102
+
+        result = safe_ns.get("result", None)
+        result_str = str(result) if result else "\n".join(output)
+
+        if not result_str.strip():
+            return {"status": "error", "message": "SymPy no pudo obtener resultado.", "code": code}
+
+        return {"status": "ok", "sympy_solution": result_str, "code": code}
+
+    except Exception as e:
+        return {"status": "error", "message": f"Error en SymPy: {str(e)}", "code": code}
 
 
 if __name__ == "__main__":
