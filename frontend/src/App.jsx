@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from 'react'
 
-const API = ''  // usa proxy de Vite: /api/...
+const API = import.meta.env.VITE_API_URL || ''  // '' usa proxy local en dev
 
 // ─── Estilos ────────────────────────────────────────────────────────────────
 

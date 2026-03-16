@@ -19,5 +19,6 @@ desktop.ini
 
 # Claves (nunca subir)
 *.key
+.env
 .env.local
 .env.production
