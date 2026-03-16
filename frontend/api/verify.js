@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import Groq from "groq-sdk";
 
 const VERIFY_PROMPT = `Eres un sistema de verificación matemática. Resuelve esta ecuación diferencial de forma INDEPENDIENTE usando un enfoque de cálculo directo, sin explicaciones ni pasos intermedios.
 
@@ -18,14 +18,15 @@ export default async function handler(req, res) {
   if (!equation) return res.status(400).json({ status: "error", message: "No se proporcionó ecuación." });
 
   try {
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-    const result = await model.generateContent(
-      VERIFY_PROMPT.replace("{equation}", equation)
-    );
+    const response = await groq.chat.completions.create({
+      model: "llama-3.3-70b-versatile",
+      max_tokens: 256,
+      messages: [{ role: "user", content: VERIFY_PROMPT.replace("{equation}", equation) }]
+    });
 
-    const solution = result.response.text().trim();
+    const solution = response.choices[0].message.content.trim();
     res.json({ status: "ok", sympy_solution: solution });
   } catch (err) {
     res.json({ status: "error", message: err.message });

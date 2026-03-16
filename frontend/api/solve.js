@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import Groq from "groq-sdk";
 
 const SOLVE_PROMPT = `Eres un profesor universitario experto en ecuaciones diferenciales. Debes resolver la siguiente ecuación diferencial siguiendo EXACTAMENTE la metodología académica estándar, paso a paso, sin omitir ningún cálculo intermedio.
 
@@ -47,7 +47,7 @@ ESTRUCTURA OBLIGATORIA DE LA SOLUCIÓN
   Sustituye el punto (x₀, y₀) en la solución general.
   Despeja K numéricamente.
   Escribe la solución particular final.
-  Indica el dominio de validez si hay restricciones (ej: raíces, logaritmos).
+  Indica el dominio de validez si hay restricciones.
 
 ▸ VERIFICACIÓN
   Sustituye la solución obtenida en la ecuación original y confirma que se cumple.
@@ -55,13 +55,10 @@ ESTRUCTURA OBLIGATORIA DE LA SOLUCIÓN
 ═══════════════════════════════════════
 REGLAS DE FORMATO
 ═══════════════════════════════════════
-- Usa → para indicar cada transformación algebraica
-- Usa = para igualdades matemáticas
-- Escribe integrales con ∫
-- Escribe ln para logaritmo natural
+- Usa → para cada transformación algebraica
+- Escribe integrales con ∫ y logaritmos con ln
 - Separa cada PASO con una línea en blanco
-- NO saltes pasos, aunque parezcan obvios
-- NO cometas errores de cálculo: verifica cada operación antes de escribirla`;
+- NO saltes pasos, NO cometas errores de cálculo`;
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
@@ -74,15 +71,17 @@ export default async function handler(req, res) {
   res.setHeader("Connection", "keep-alive");
 
   try {
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-    const result = await model.generateContentStream(
-      SOLVE_PROMPT.replace("{equation}", equation)
-    );
+    const stream = await groq.chat.completions.create({
+      model: "llama-3.3-70b-versatile",
+      max_tokens: 8192,
+      stream: true,
+      messages: [{ role: "user", content: SOLVE_PROMPT.replace("{equation}", equation) }]
+    });
 
-    for await (const chunk of result.stream) {
-      const text = chunk.text();
+    for await (const chunk of stream) {
+      const text = chunk.choices[0]?.delta?.content || "";
       if (text) {
         res.write(`data: ${JSON.stringify({ type: "text", content: text })}\n\n`);
       }
