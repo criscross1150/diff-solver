@@ -1,12 +1,10 @@
 import os
-import io
+import base64
 import json
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
-from google import genai
-from google.genai import types
-from PIL import Image
+import anthropic
 
 app = FastAPI()
 
@@ -22,13 +20,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-MODEL = "gemini-2.0-flash"
-
 def get_client():
-    api_key = os.environ.get("GEMINI_API_KEY")
+    api_key = os.environ.get("ANTHROPIC_API_KEY")
     if not api_key:
-        raise HTTPException(status_code=500, detail="GEMINI_API_KEY no configurada.")
-    return genai.Client(api_key=api_key)
+        raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY no configurada.")
+    return anthropic.Anthropic(api_key=api_key)
 
 EXTRACT_PROMPT = """Eres un experto en matemáticas. Tu única tarea es LEER con precisión la ecuación diferencial de la imagen.
 
@@ -110,20 +106,39 @@ async def extract_equation(image: UploadFile = File(...)):
     if image.content_type not in allowed_types:
         raise HTTPException(status_code=400, detail="Formato no soportado. Usa JPG, PNG, GIF o WebP.")
 
-    try:
-        image_data = await image.read()
-        pil_image = Image.open(io.BytesIO(image_data))
+    image_data = await image.read()
+    image_b64 = base64.standard_b64encode(image_data).decode("utf-8")
+    media_type = image.content_type
+    if media_type == "image/jpg":
+        media_type = "image/jpeg"
 
+    try:
         client = get_client()
-        response = client.models.generate_content(
-            model=MODEL,
-            contents=[EXTRACT_PROMPT, pil_image]
+        response = client.messages.create(
+            model="claude-opus-4-6",
+            max_tokens=1024,
+            messages=[{
+                "role": "user",
+                "content": [
+                    {
+                        "type": "image",
+                        "source": {
+                            "type": "base64",
+                            "media_type": media_type,
+                            "data": image_b64
+                        }
+                    },
+                    {"type": "text", "text": EXTRACT_PROMPT}
+                ]
+            }]
         )
-        equation = response.text.strip()
+        equation = response.content[0].text.strip()
         return {"equation": equation}
 
+    except anthropic.BadRequestError as e:
+        raise HTTPException(status_code=400, detail=f"Error al procesar la imagen: {str(e)}")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error al procesar la imagen: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
 
 
 @app.post("/api/solve")
@@ -135,28 +150,30 @@ async def solve_equation(body: dict):
     def stream_solution():
         try:
             client = get_client()
-            for chunk in client.models.generate_content_stream(
-                model=MODEL,
-                contents=SOLVE_PROMPT.format(equation=equation)
-            ):
-                if chunk.text:
-                    data = json.dumps({"type": "text", "content": chunk.text})
-                    yield f"data: {data}\n\n"
+            with client.messages.stream(
+                model="claude-opus-4-6",
+                max_tokens=8192,
+                thinking={"type": "adaptive"},
+                messages=[{
+                    "role": "user",
+                    "content": SOLVE_PROMPT.format(equation=equation)
+                }]
+            ) as stream:
+                for event in stream:
+                    if event.type == "content_block_delta":
+                        if event.delta.type == "text_delta":
+                            data = json.dumps({"type": "text", "content": event.delta.text})
+                            yield f"data: {data}\n\n"
 
-            data = json.dumps({"type": "done"})
-            yield f"data: {data}\n\n"
+                yield f"data: {json.dumps({'type': 'done'})}\n\n"
 
         except Exception as e:
-            data = json.dumps({"type": "error", "message": str(e)})
-            yield f"data: {data}\n\n"
+            yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
 
     return StreamingResponse(
         stream_solution(),
         media_type="text/event-stream",
-        headers={
-            "Cache-Control": "no-cache",
-            "X-Accel-Buffering": "no",
-        }
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"}
     )
 
 
