@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 
-const API = import.meta.env.VITE_API_URL || ''
+const API = ''  // API routes en el mismo dominio Vercel
 
 // ─── Estilos ─────────────────────────────────────────────────────────────────
 
@@ -346,9 +346,22 @@ export default function App() {
     setEquation('')
     setSolution('')
     try {
-      const form = new FormData()
-      form.append('image', image.file)
-      const res = await fetch(`${API}/api/extract`, { method: 'POST', body: form })
+      // Convertir imagen a base64
+      const base64Data = await new Promise((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = (e) => {
+          const [header, data] = e.target.result.split(',')
+          resolve({ data, mimeType: header.match(/:(.*?);/)[1] })
+        }
+        reader.onerror = reject
+        reader.readAsDataURL(image.file)
+      })
+
+      const res = await fetch(`${API}/api/extract`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageBase64: base64Data.data, mimeType: base64Data.mimeType }),
+      })
       if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail || `Error ${res.status}`)
       const data = await res.json()
       setEquation(data.equation)
