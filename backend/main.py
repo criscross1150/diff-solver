@@ -115,7 +115,7 @@ async def extract_equation(image: UploadFile = File(...)):
     try:
         client = get_client()
         response = client.messages.create(
-            model="claude-opus-4-6",
+            model="claude-sonnet-4-6",
             max_tokens=1024,
             messages=[{
                 "role": "user",
@@ -151,7 +151,7 @@ async def solve_equation(body: dict):
         try:
             client = get_client()
             with client.messages.stream(
-                model="claude-opus-4-6",
+                model="claude-sonnet-4-6",
                 max_tokens=8192,
                 thinking={"type": "adaptive"},
                 messages=[{
