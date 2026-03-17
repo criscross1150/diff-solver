@@ -91,13 +91,14 @@ export default async function handler(req, res) {
     });
 
     let inThink = false;
+    let thinkNotified = false;
     let thinkBuf = "";
 
     for await (const chunk of stream) {
       const text = chunk.choices[0]?.delta?.content || "";
       if (!text) continue;
 
-      // Filter <think>...</think> reasoning blocks (not shown to user)
+      // Filter <think>...</think> reasoning blocks; notify frontend once when thinking starts
       let remaining = thinkBuf + text;
       thinkBuf = "";
       let filtered = "";
@@ -117,6 +118,10 @@ export default async function handler(req, res) {
           if (start !== -1) {
             filtered += remaining.slice(0, start);
             inThink = true;
+            if (!thinkNotified) {
+              thinkNotified = true;
+              res.write(`data: ${JSON.stringify({ type: "thinking" })}\n\n`);
+            }
             remaining = remaining.slice(start + 7);
           } else {
             filtered += remaining;

@@ -567,6 +567,7 @@ export default function App() {
   const [solution, setSolution]       = useState('')
   const [verification, setVerification] = useState(null)
   const [status, setStatus]           = useState('idle')
+  const [isThinking, setIsThinking]   = useState(false)
   const [error, setError]             = useState('')
   const [isDragging, setIsDragging]   = useState(false)
 
@@ -602,7 +603,7 @@ export default function App() {
   const reset = () => {
     setRawImage(null); setImage(null); setCropping(false)
     setEquation(''); setSolution(''); setVerification(null)
-    setStatus('idle'); setError('')
+    setStatus('idle'); setIsThinking(false); setError('')
   }
 
   const extractEquation = async () => {
@@ -634,7 +635,7 @@ export default function App() {
 
   const solveEquation = async () => {
     if (!equation) return
-    setStatus('solving'); setError(''); setSolution('')
+    setStatus('solving'); setError(''); setSolution(''); setIsThinking(false)
     try {
       const res = await fetch(`${API}/api/solve`, {
         method: 'POST',
@@ -658,7 +659,8 @@ export default function App() {
           if (!raw) continue
           try {
             const ev = JSON.parse(raw)
-            if (ev.type === 'text') setSolution(p => p + ev.content)
+            if (ev.type === 'thinking') setIsThinking(true)
+            else if (ev.type === 'text') { setIsThinking(false); setSolution(p => p + ev.content) }
             else if (ev.type === 'done') { setStatus('done'); verifyWithSympy(equation) }
             else if (ev.type === 'error') throw new Error(ev.message)
           } catch (_) {}
@@ -768,9 +770,15 @@ export default function App() {
             <div style={S.card}>
               <div style={S.cardTitle}>
                 <span>📐</span> 3. Resolución paso a paso
-                {isSolving && <span style={S.badge('purple')}>Calculando...</span>}
+                {isThinking && <span style={S.badge('purple')}>🧠 Analizando el problema...</span>}
+                {isSolving && !isThinking && <span style={S.badge('purple')}>Calculando...</span>}
                 {status === 'done' && <span style={S.badge('success')}>✓ Completado</span>}
               </div>
+              {isThinking && (
+                <div style={{ ...S.row, color: '#64748b', fontSize: '0.85rem', marginBottom: '12px' }}>
+                  <span style={S.spinner} /> El modelo está razonando internamente antes de escribir la solución...
+                </div>
+              )}
               <div style={S.solutionBox}>
                 <MathText text={solution} />
                 {isSolving && <span style={{ animation: 'blink 1s step-end infinite' }}>▊</span>}
