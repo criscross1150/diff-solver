@@ -3,8 +3,10 @@
   "outputDirectory": "dist",
   "framework": "vite",
   "functions": {
-    "api/solve.js": { "maxDuration": 60 },
-    "api/extract.js": { "maxDuration": 30 },
-    "api/verify.js": { "maxDuration": 30 }
+    "api/solve.js":     { "maxDuration": 60 },
+    "api/solvelp.js":   { "maxDuration": 60 },
+    "api/extract.js":   { "maxDuration": 30 },
+    "api/extractlp.js": { "maxDuration": 30 },
+    "api/verify.js":    { "maxDuration": 30 }
   }
 }

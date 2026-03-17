@@ -44,13 +44,21 @@ ESTRUCTURA OBLIGATORIA DE LA SOLUCIÓN
   constantes adicionales que se perdieron en el proceso.
 
 ▸ PASO 6 — CONDICIÓN INICIAL (solo si existe)
-  Sustituye el punto (x₀, y₀) en la solución general.
-  Despeja K numéricamente.
-  Escribe la solución particular final.
-  Indica el dominio de validez si hay restricciones.
+  Dado el punto $(x_0, y_0)$, sigue estos sub-pasos OBLIGATORIOS sin saltarte ninguno:
+  1. Escribe la solución general y sustituye literalmente $x = x_0$, $y = y_0$
+  2. Calcula $x_0^2$ como número exacto (ej: si $x_0 = 2$ entonces $x_0^2 = 4$)
+  3. Calcula cada operación sobre el exponente paso a paso
+     (ej: $-\frac{x_0^2}{2} = -\frac{4}{2} = -2$, por lo tanto $e^{-2}$)
+  4. Despeja $K$ algebraicamente mostrando cada paso:
+     $K = \frac{y_0}{e^{\ldots}} = e^{\ldots}$
+  5. Escribe la solución particular final con $K$ sustituido
+  6. VERIFICACIÓN INMEDIATA: evalúa $y(x_0)$ con la solución particular
+     y confirma explícitamente que el resultado es $y_0$
 
 ▸ VERIFICACIÓN
-  Sustituye la solución obtenida en la ecuación original y confirma que se cumple.
+  a) Calcula $\frac{dy}{dx}$ de la solución obtenida paso a paso
+  b) Sustituye en la ecuación original y confirma la igualdad algebraica
+  c) Si hay condición inicial: evalúa $y(x_0)$ numéricamente y confirma que es $y_0$
 
 ═══════════════════════════════════════
 REGLAS DE FORMATO
