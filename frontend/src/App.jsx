@@ -756,7 +756,19 @@ export default function App() {
                 <span>🔍</span> 2. Ecuación detectada
                 <span style={S.badge('success')}>✓ Leída</span>
               </div>
-              <div style={S.equationBox}><MathText text={equation} /></div>
+              <p style={{ color: '#64748b', fontSize: '0.78rem', marginBottom: '8px' }}>
+                Revisa y corrige si la lectura no fue exacta:
+              </p>
+              <textarea
+                value={equation}
+                onChange={e => { setEquation(e.target.value); setSolution(''); setVerification(null) }}
+                style={{ ...S.textarea, minHeight: '80px' }}
+              />
+              {equation && (
+                <div style={{ ...S.equationBox, marginTop: '10px', fontSize: '0.95rem' }}>
+                  <MathText text={equation} />
+                </div>
+              )}
               <div style={{ ...S.row, marginTop: '14px' }}>
                 <button style={S.btn('primary', isSolving)} onClick={solveEquation} disabled={isSolving}>
                   {isSolving ? <><span style={S.spinner} /> Resolviendo...</> : 'Resolver paso a paso'}
