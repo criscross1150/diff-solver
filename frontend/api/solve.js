@@ -84,16 +84,49 @@ export default async function handler(req, res) {
     const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
     const stream = await groq.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
+      model: "deepseek-r1-distill-llama-70b",
       max_tokens: 8192,
       stream: true,
       messages: [{ role: "user", content: SOLVE_PROMPT.replace("{equation}", equation) }]
     });
 
+    let inThink = false;
+    let thinkBuf = "";
+
     for await (const chunk of stream) {
       const text = chunk.choices[0]?.delta?.content || "";
-      if (text) {
-        res.write(`data: ${JSON.stringify({ type: "text", content: text })}\n\n`);
+      if (!text) continue;
+
+      // Filter <think>...</think> reasoning blocks (not shown to user)
+      let remaining = thinkBuf + text;
+      thinkBuf = "";
+      let filtered = "";
+
+      while (remaining.length > 0) {
+        if (inThink) {
+          const end = remaining.indexOf("</think>");
+          if (end !== -1) {
+            inThink = false;
+            remaining = remaining.slice(end + 8);
+          } else {
+            thinkBuf = remaining;
+            remaining = "";
+          }
+        } else {
+          const start = remaining.indexOf("<think>");
+          if (start !== -1) {
+            filtered += remaining.slice(0, start);
+            inThink = true;
+            remaining = remaining.slice(start + 7);
+          } else {
+            filtered += remaining;
+            remaining = "";
+          }
+        }
+      }
+
+      if (filtered) {
+        res.write(`data: ${JSON.stringify({ type: "text", content: filtered })}\n\n`);
       }
     }
     res.write(`data: ${JSON.stringify({ type: "done" })}\n\n`);
