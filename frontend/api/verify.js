@@ -23,7 +23,13 @@ export default async function handler(req, res) {
     const response = await groq.chat.completions.create({
       model: "llama-3.3-70b-versatile",
       max_tokens: 256,
-      messages: [{ role: "user", content: VERIFY_PROMPT.replace("{equation}", equation) }]
+      messages: [
+        {
+          role: "system",
+          content: "Eres un verificador matemático preciso. Cuando hay condición inicial, calcula el valor del exponente numéricamente paso a paso antes de despejar K. Sé meticuloso con los signos."
+        },
+        { role: "user", content: VERIFY_PROMPT.replace("{equation}", equation) }
+      ]
     });
 
     const solution = response.choices[0].message.content.trim();

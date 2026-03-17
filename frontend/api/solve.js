@@ -84,10 +84,16 @@ export default async function handler(req, res) {
     const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
     const stream = await groq.chat.completions.create({
-      model: "deepseek-r1-distill-llama-70b",
+      model: "llama-3.3-70b-versatile",
       max_tokens: 8192,
       stream: true,
-      messages: [{ role: "user", content: SOLVE_PROMPT.replace("{equation}", equation) }]
+      messages: [
+        {
+          role: "system",
+          content: "Eres un experto en cálculo diferencial. Cuando hay condición inicial, SIEMPRE calcula x₀² como número, luego el exponente completo, luego despeja K. Verifica cada resultado numérico antes de continuar. Nunca cometas errores de signo."
+        },
+        { role: "user", content: SOLVE_PROMPT.replace("{equation}", equation) }
+      ]
     });
 
     let inThink = false;

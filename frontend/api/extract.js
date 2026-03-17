@@ -1,15 +1,14 @@
 import Groq from "groq-sdk";
 
-const EXTRACT_PROMPT = `Eres un experto en matemáticas. Tu única tarea es transcribir con precisión el enunciado completo del problema que aparece en la imagen.
+const EXTRACT_PROMPT = `Eres un experto en matemáticas. Transcribe exactamente el problema que aparece en la imagen.
 
-Extrae TODO el contenido relevante en este orden:
-1. La instrucción del ejercicio si existe (ej: "Resuelve el problema de valores iniciales", "Encuentra la solución general", etc.)
-2. La ecuación diferencial en notación LaTeX
-3. Las condiciones iniciales o de frontera si existen (ej: y(2) = 1, y(0) = 3) — MUY IMPORTANTE, no las omitas
-4. Cualquier restricción o dato adicional
-
-Usa LaTeX para las expresiones matemáticas (ej: $\\frac{dy}{dx}$, $y(2)=1$).
-Responde con el enunciado completo tal como aparece, sin resolver ni agregar explicaciones.`;
+Reglas estrictas:
+- Copia el texto del enunciado tal como aparece (ej: "Resuelve el problema de valores iniciales")
+- Escribe la ecuación en LaTeX (ej: $\\frac{dy}{dx} = -xy$)
+- Incluye las condiciones iniciales si existen (ej: $y(2) = 1$) — NO las omitas bajo ninguna circunstancia
+- NO agregues títulos propios, pasos, ni explicaciones
+- NO uses encabezados como "## Step" ni "Instrucción:"
+- Responde solo con el enunciado del problema, en 1 a 4 líneas máximo`;
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
