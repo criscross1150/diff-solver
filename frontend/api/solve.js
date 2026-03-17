@@ -17,19 +17,23 @@ ESTRUCTURA OBLIGATORIA DE LA SOLUCIÓN
   - Método de resolución que se usará
 
 ▸ PASO 1 — MANIOBRA ALGEBRAICA INICIAL
-  Muestra exactamente qué operación algebraica se aplica para separar variables
-  (dividir, multiplicar, reescribir). Escribe la ecuación antes y después.
+  Muestra exactamente qué operación algebraica se aplica para separar variables.
+  Escribe la ecuación antes y después de la operación.
+  CRÍTICO: conserva el signo exacto de cada término al mover cosas de lado.
+  Ejemplo: de $\frac{dy}{dx} = -xy$ dividiendo por $y$ se obtiene $\frac{dy}{y} = -x\,dx$
+  (el signo negativo del $-x$ NO desaparece).
 
 ▸ PASO 2 — SEPARACIÓN DE VARIABLES
-  Escribe la ecuación en la forma:
-      f(y) dy = g(x) dx
-  Muestra cada término claramente a cada lado.
+  Escribe la ecuación en la forma $f(y)\,dy = g(x)\,dx$.
+  CRÍTICO: $g(x)$ debe llevar el signo EXACTO que tiene en la ecuación.
+  Antes de seguir, verifica en voz alta: "el signo de $g(x)$ es ___".
 
 ▸ PASO 3 — INTEGRACIÓN DE AMBOS LADOS
-  Escribe:
-      ∫ f(y) dy = ∫ g(x) dx
-  Resuelve cada integral por separado, mostrando la antiderivada obtenida.
-  Incluye la constante de integración c ∈ ℝ solo en un lado.
+  Escribe: $\int f(y)\,dy = \int g(x)\,dx$
+  CRÍTICO: integra $g(x)$ con su signo correcto.
+  Ejemplo: $\int -x\,dx = -\frac{x^2}{2} + c$ (el negativo se mantiene).
+  Resuelve cada integral mostrando la antiderivada obtenida.
+  Incluye la constante de integración $c \in \mathbb{R}$ solo en un lado.
 
   Si se requieren fracciones parciales, desarrolla la descomposición completa.
   Si la integral no tiene forma elemental, exprésala como ecuación integral.
@@ -90,7 +94,7 @@ export default async function handler(req, res) {
       messages: [
         {
           role: "system",
-          content: "Eres un experto en cálculo diferencial. Cuando hay condición inicial, SIEMPRE calcula x₀² como número, luego el exponente completo, luego despeja K. Verifica cada resultado numérico antes de continuar. Nunca cometas errores de signo."
+          content: "Eres un experto en cálculo diferencial con precisión absoluta. Reglas críticas: (1) Al separar variables, el signo de g(x) NUNCA cambia — si la ecuación dice -xy, entonces g(x) = -x, y la integral es ∫-x dx = -x²/2, NO +x²/2. (2) Verifica el signo del integrando antes de integrar. (3) Para condición inicial: calcula x₀² numéricamente, luego el exponente completo, luego despeja K paso a paso."
         },
         { role: "user", content: SOLVE_PROMPT.replace("{equation}", equation) }
       ]

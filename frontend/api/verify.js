@@ -26,7 +26,7 @@ export default async function handler(req, res) {
       messages: [
         {
           role: "system",
-          content: "Eres un verificador matemático preciso. Cuando hay condición inicial, calcula el valor del exponente numéricamente paso a paso antes de despejar K. Sé meticuloso con los signos."
+          content: "Eres un verificador matemático con precisión absoluta. Regla crítica: al separar variables el signo de g(x) NUNCA cambia. Si la ecuación tiene -xy, entonces al separar obtienes dy/y = -x dx, y la integral es -x²/2, NO +x²/2. Verifica el signo antes de integrar."
         },
         { role: "user", content: VERIFY_PROMPT.replace("{equation}", equation) }
       ]
