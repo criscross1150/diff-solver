@@ -55,8 +55,10 @@ ESTRUCTURA OBLIGATORIA DE LA SOLUCIÓN
 ═══════════════════════════════════════
 REGLAS DE FORMATO
 ═══════════════════════════════════════
-- Usa → para cada transformación algebraica
-- Escribe integrales con ∫ y logaritmos con ln
+- Escribe TODA expresión matemática en LaTeX
+- Expresión dentro de una oración: $expresión$
+- Ecuación en línea propia (centrada y destacada): $$expresión$$
+- Notación: \\frac{dy}{dx}, \\int f\\,dy, \\ln|y|, e^{C}, K = \\pm e^C
 - Separa cada PASO con una línea en blanco
 - NO saltes pasos, NO cometas errores de cálculo`;
 

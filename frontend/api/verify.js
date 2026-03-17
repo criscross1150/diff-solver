@@ -4,12 +4,12 @@ const VERIFY_PROMPT = `Eres un sistema de verificación matemática. Resuelve es
 
 Ecuación: {equation}
 
-Responde ÚNICAMENTE con la solución final. Por ejemplo:
-y = K(3+x)²
-y = e^(-x²/2 + 2)
-y = (x² ± 1)²
+Responde ÚNICAMENTE con la solución final en formato LaTeX, en una sola línea. Ejemplos:
+$$y = K(3+x)^2$$
+$$y = e^{-x^2/2 + 2}$$
+$$y = \\pm\\sqrt{x^2 + 1}$$
 
-Solo la expresión final, nada más.`;
+Solo esa línea LaTeX, nada más.`;
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();

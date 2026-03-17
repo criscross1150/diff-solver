@@ -3,12 +3,12 @@ import Groq from "groq-sdk";
 const EXTRACT_PROMPT = `Eres un experto en matemáticas. Tu única tarea es LEER con precisión la ecuación diferencial de la imagen.
 
 Extrae EXACTAMENTE la ecuación diferencial tal como aparece en la imagen.
-- Usa notación matemática estándar (dy/dx, y', y'', etc.)
+- Escribe la ecuación en notación LaTeX
 - Si hay condiciones iniciales, inclúyelas
 - Si hay múltiples ecuaciones o partes, inclúyelas todas
 - NO resuelvas nada, solo transcribe
 
-Responde ÚNICAMENTE con la ecuación extraída, sin explicaciones adicionales.`;
+Responde ÚNICAMENTE con la ecuación en LaTeX, en formato $$ecuación$$, sin explicaciones adicionales.`;
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();

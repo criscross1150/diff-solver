@@ -1,4 +1,6 @@
-import { useState, useRef, useCallback, useEffect } from 'react'
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
+import katex from 'katex'
+import 'katex/dist/katex.min.css'
 
 const API = ''  // API routes en el mismo dominio Vercel
 
@@ -103,6 +105,45 @@ const S = {
   cropHint: {
     marginTop: '10px', color: '#64748b', fontSize: '0.82rem', textAlign: 'center',
   },
+}
+
+// ─── Renderizador LaTeX ──────────────────────────────────────────────────────
+
+function parseMath(text) {
+  const segments = []
+  const re = /(\$\$[\s\S]+?\$\$|\$[^\n$]+?\$)/g
+  let last = 0, m
+  while ((m = re.exec(text)) !== null) {
+    if (m.index > last) segments.push({ t: 'text', v: text.slice(last, m.index) })
+    const isDisplay = m[0].startsWith('$$')
+    segments.push({ t: isDisplay ? 'display' : 'inline', v: m[0].slice(isDisplay ? 2 : 1, isDisplay ? -2 : -1) })
+    last = m.index + m[0].length
+  }
+  if (last < text.length) segments.push({ t: 'text', v: text.slice(last) })
+  return segments
+}
+
+function MathText({ text }) {
+  const segments = useMemo(() => parseMath(text || ''), [text])
+  return (
+    <>
+      {segments.map((seg, i) => {
+        if (seg.t === 'display') {
+          try {
+            const html = katex.renderToString(seg.v.trim(), { displayMode: true, throwOnError: false })
+            return <div key={i} style={{ textAlign: 'center', margin: '10px 0', overflowX: 'auto' }} dangerouslySetInnerHTML={{ __html: html }} />
+          } catch { return <div key={i}>$${seg.v}$$</div> }
+        }
+        if (seg.t === 'inline') {
+          try {
+            const html = katex.renderToString(seg.v, { displayMode: false, throwOnError: false })
+            return <span key={i} dangerouslySetInnerHTML={{ __html: html }} />
+          } catch { return <span key={i}>${seg.v}$</span> }
+        }
+        return <span key={i} style={{ whiteSpace: 'pre-wrap' }}>{seg.v}</span>
+      })}
+    </>
+  )
 }
 
 // ─── Herramienta de recorte ───────────────────────────────────────────────────
@@ -511,7 +552,7 @@ export default function App() {
               <span>🔍</span> 2. Ecuación detectada
               <span style={S.badge('success')}>✓ Leída</span>
             </div>
-            <div style={S.equationBox}>{equation}</div>
+            <div style={S.equationBox}><MathText text={equation} /></div>
             <div style={{ ...S.row, marginTop: '14px' }}>
               <button
                 style={S.btn('primary', isSolving)}
@@ -534,8 +575,8 @@ export default function App() {
               {isSolving && <span style={S.badge('purple')}>Calculando...</span>}
               {status === 'done' && <span style={S.badge('success')}>✓ Completado</span>}
             </div>
-            <div style={S.solutionBox}>
-              {solution}
+            <div style={{ ...S.solutionBox, fontFamily: 'Inter, sans-serif', fontSize: '0.9rem' }}>
+              <MathText text={solution} />
               {isSolving && <span style={{ animation: 'blink 1s step-end infinite' }}>▊</span>}
             </div>
           </div>
@@ -562,8 +603,8 @@ export default function App() {
                 <p style={{ color: '#64748b', fontSize: '0.78rem', marginBottom: '10px' }}>
                   Solución exacta calculada independientemente por SymPy (motor de matemática simbólica):
                 </p>
-                <div style={{ ...S.equationBox, borderColor: 'rgba(52,211,153,0.25)', fontSize: '0.92rem' }}>
-                  {verification.sympy_solution}
+                <div style={{ ...S.equationBox, borderColor: 'rgba(52,211,153,0.25)', fontSize: '1rem', textAlign: 'center' }}>
+                  <MathText text={verification.sympy_solution} />
                 </div>
               </div>
             )}
