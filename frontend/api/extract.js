@@ -4,8 +4,10 @@ const EXTRACT_PROMPT = `Eres un experto en matemáticas. Transcribe exactamente 
 
 Reglas estrictas:
 - Copia el texto del enunciado tal como aparece (ej: "Resuelve el problema de valores iniciales")
-- Escribe la ecuación en LaTeX (ej: $\\frac{dy}{dx} = -xy$)
+- Escribe la ecuación en LaTeX con TODOS sus signos (ej: $\\frac{dy}{dx} = -xy$ — el signo negativo es crítico)
+- Si ves "dy/dx - xy" interpreta si es una ecuación del tipo dy/dx = -xy o dy/dx - xy = f(x); presta atención al contexto
 - Incluye las condiciones iniciales si existen (ej: $y(2) = 1$) — NO las omitas bajo ninguna circunstancia
+- Conserva el signo de cada término exactamente como aparece
 - NO agregues títulos propios, pasos, ni explicaciones
 - NO uses encabezados como "## Step" ni "Instrucción:"
 - Responde solo con el enunciado del problema, en 1 a 4 líneas máximo`;
